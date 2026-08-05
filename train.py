@@ -180,10 +180,15 @@ def main():
             league.add_snapshot(net.state_dict(), it)
             collector.prune_opponent_cache()
 
+        # Only rows where an evaluation actually ran carry eval columns. Copying
+        # the last known values into every row makes the log look like it holds
+        # far more measurements than it does.
+        evals_now = {}
         if args.eval_every and (it % args.eval_every == 0 or it == args.iters - 1):
-            evals = evaluate_vs_bots(net, games=args.eval_games, device=device,
-                                     seed=args.seed + it,
-                                     frame_skip=args.frame_skip)
+            evals_now = evaluate_vs_bots(net, games=args.eval_games, device=device,
+                                         seed=args.seed + it,
+                                         frame_skip=args.frame_skip)
+            evals = evals_now
 
         st = collector.stats.summary()
         row = {
@@ -198,7 +203,7 @@ def main():
         }
         row.update({k: (round(v, 4) if v == v else "") for k, v in st.items()})
         row.update({k: round(v, 4) for k, v in info.items() if k in LOG_FIELDS})
-        row.update({f"eval_{k}": round(v, 3) for k, v in evals.items()})
+        row.update({f"eval_{k}": round(v, 3) for k, v in evals_now.items()})
         log.writerow({k: row.get(k, "") for k in LOG_FIELDS})
         log_f.flush()
 

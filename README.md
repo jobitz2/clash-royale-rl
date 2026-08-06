@@ -35,7 +35,59 @@ game*, in the spirit of how AlphaZero learns chess. The strategy it discovers
 real strategy, and transfers to how you think about the actual game. The trained
 weights do not transfer to a device.
 
-## Does it actually improve?
+## Results
+
+A 201-iteration run (1.65M decisions, ~14M simulated game ticks) starting from
+random weights. Win rate over 60 games per bot, seats alternated:
+
+| opponent | at iter 0 | after 201 iters |
+|---|---|---|
+| `noop` | 1.00 | 1.00 ± 0.00 |
+| `random` | 0.56 | **1.00 ± 0.00** |
+| `rush` | 0.06 | **0.80 ± 0.05** |
+| `heuristic` | 0.00 | **0.32 ± 0.06** |
+
+It went from losing to `rush` 94% of the time to beating it 80%, and from never
+beating `heuristic` to taking a third of those games — against a bot that itself
+beats `rush` 90% of the time.
+
+The clearest evidence of *steady* improvement is the league's own Elo ladder at
+the end of the run. Each entry is a frozen historical copy of the policy, all
+rated on one scale anchored at `random = 0`:
+
+```
+  heuristic     806        <- scripted, still ahead
+  snap@180      686
+  snap@160      653
+  snap@140      575
+  snap@120      543
+  snap@100      524
+  rush          466        <- passed the rush bot around iteration 90
+  snap@80       413
+  snap@60       272
+  snap@40        20
+  random          0        <- anchor
+  snap@20      -103
+  noop         -646
+```
+
+Monotonic across ten snapshots: every frozen version is stronger than the one
+before it. `entropy` fell smoothly from 4.46 to 1.89 (becoming decisive, not
+collapsing) and critic `explained_variance` rose to ~0.80.
+
+Reproduce with:
+
+```bash
+PYTHONPATH=. .venv/bin/python train.py --iters 400 --n-envs 64 --horizon 128 \
+    --workers 8 --device mps --snapshot-every 20 --eval-every 20 --eval-games 16
+```
+
+`heuristic` is not yet beaten. That is the honest state: the agent is clearly
+mid-curve, still gaining, and the run was stopped at 201 of 400 iterations rather
+than converged. `--resume runs/<run>/latest.pt` picks it back up with the league
+intact.
+
+## How progress is measured
 
 Two independent measures, because each one alone can lie.
 

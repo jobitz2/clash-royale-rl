@@ -1,0 +1,1158 @@
+<title>Clash Royale RL &#x2014; training visualisation</title>
+<style>
+  /* ---------------------------------------------------------------- tokens */
+  :root {
+    color-scheme: light;
+    --plane:        #f6f5f9;
+    --surface:      #fdfdfe;
+    --surface-2:    #f0eef5;
+    --arena-plane:  #16151d;
+    --ink:          #14121c;
+    --ink-2:        #56535f;
+    --muted:        #807d8b;
+    --hairline:     #e2e0e9;
+    --baseline:     #c4c1cf;
+    --border:       rgba(20,18,28,0.10);
+    --accent:       #7b5cd6;
+    --accent-soft:  rgba(123,92,214,0.10);
+    --p0:           #2a78d6;
+    --p1:           #e34948;
+    --crown:        #eda100;
+    --s1:           #2a78d6;
+    --s2:           #eb6834;
+    --s3:           #1baf7a;
+    --good:         #006300;
+    --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --plane:        #0d0c12;
+      --surface:      #17161e;
+      --surface-2:    #1e1d27;
+      --arena-plane:  #0a0910;
+      --ink:          #f3f2f8;
+      --ink-2:        #c0bdcb;
+      --muted:        #8b8894;
+      --hairline:     #2b2a34;
+      --baseline:     #3a3846;
+      --border:       rgba(255,255,255,0.10);
+      --accent:       #9b82e8;
+      --accent-soft:  rgba(155,130,232,0.14);
+      --p0:           #3987e5;
+      --p1:           #e66767;
+      --crown:        #c98500;
+      --s1:           #3987e5;
+      --s2:           #d95926;
+      --s3:           #199e70;
+      --good:         #0ca30c;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --plane:        #0d0c12;
+    --surface:      #17161e;
+    --surface-2:    #1e1d27;
+    --arena-plane:  #0a0910;
+    --ink:          #f3f2f8;
+    --ink-2:        #c0bdcb;
+    --muted:        #8b8894;
+    --hairline:     #2b2a34;
+    --baseline:     #3a3846;
+    --border:       rgba(255,255,255,0.10);
+    --accent:       #9b82e8;
+    --accent-soft:  rgba(155,130,232,0.14);
+    --p0:           #3987e5;
+    --p1:           #e66767;
+    --crown:        #c98500;
+    --s1:           #3987e5;
+    --s2:           #d95926;
+    --s3:           #199e70;
+    --good:         #0ca30c;
+  }
+
+  /* ------------------------------------------------------------------ base */
+  body {
+    margin: 0;
+    background: var(--plane);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+  .stack { display: flex; flex-direction: column; }
+
+  h1, h2, h3 { text-wrap: balance; margin: 0; letter-spacing: -0.02em; }
+  h1 { font-size: clamp(2rem, 5vw, 3.1rem); font-weight: 800; line-height: 1.08; }
+  h2 { font-size: clamp(1.35rem, 3vw, 1.85rem); font-weight: 700; }
+  h3 { font-size: 1.02rem; font-weight: 650; letter-spacing: -0.01em; }
+  p { margin: 0; max-width: 68ch; }
+  a { color: var(--accent); }
+  code, .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  code {
+    font-size: 0.87em; background: var(--surface-2);
+    padding: 0.12em 0.36em; border-radius: 3px;
+  }
+
+  .eyebrow {
+    font-family: var(--mono); font-size: 0.72rem; text-transform: uppercase;
+    letter-spacing: 0.14em; color: var(--muted); font-weight: 600;
+  }
+  .lede { font-size: 1.09rem; color: var(--ink-2); max-width: 62ch; }
+  .note { font-size: 0.92rem; color: var(--ink-2); max-width: 66ch; }
+
+  section { padding: 56px 0; border-top: 1px solid var(--hairline); }
+  section:first-of-type { border-top: 0; }
+  .sec-head { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+
+  /* ----------------------------------------------------------------- header */
+  header { padding: 68px 0 44px; }
+  .titleblock { display: flex; flex-direction: column; gap: 18px; }
+  .caveat {
+    display: flex; gap: 12px; align-items: flex-start;
+    background: var(--accent-soft); border-left: 3px solid var(--accent);
+    padding: 14px 16px; border-radius: 0 6px 6px 0; max-width: 72ch;
+    font-size: 0.94rem; color: var(--ink-2);
+  }
+  .caveat strong { color: var(--ink); }
+
+  /* ------------------------------------------------------------ stat strip */
+  .stats {
+    display: grid; gap: 1px; background: var(--hairline);
+    grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+    border: 1px solid var(--hairline); border-radius: 8px; overflow: hidden;
+    margin-top: 34px;
+  }
+  .stat { background: var(--surface); padding: 16px 18px; display: flex; flex-direction: column; gap: 3px; }
+  .stat-v { font-family: var(--mono); font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; }
+  .stat-k { font-size: 0.76rem; color: var(--muted); letter-spacing: 0.02em; }
+
+  /* ---------------------------------------------------------------- cards */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px;
+  }
+  .card-head { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+  .card-title { font-size: 0.98rem; font-weight: 650; }
+  .card-sub { font-size: 0.83rem; color: var(--muted); }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 860px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  /* ---------------------------------------------------------------- charts */
+  .chart-host { width: 100%; overflow-x: auto; }
+  svg.chart { display: block; width: 100%; height: auto; }
+  .chart text { font-family: var(--mono); fill: var(--muted); font-size: 10.5px; font-variant-numeric: tabular-nums; }
+  .chart .axis-title { fill: var(--ink-2); font-family: var(--sans); font-size: 11px; }
+  .chart .dlabel { font-family: var(--sans); font-size: 11.5px; font-weight: 650; }
+  .grid-line { stroke: var(--hairline); stroke-width: 1; }
+  .base-line { stroke: var(--baseline); stroke-width: 1; }
+  .ref-line { stroke: var(--baseline); stroke-width: 1; }
+  .crosshair { stroke: var(--baseline); stroke-width: 1; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-bottom: 12px; }
+  .lg { display: inline-flex; align-items: center; gap: 7px; font-size: 0.85rem; color: var(--ink-2); }
+  .sw { width: 11px; height: 11px; border-radius: 3px; flex: none; }
+
+  .tip {
+    position: fixed; pointer-events: none; z-index: 40; opacity: 0;
+    transition: opacity .1s; background: var(--surface); color: var(--ink);
+    border: 1px solid var(--border); border-radius: 7px; padding: 8px 10px;
+    font-size: 0.82rem; box-shadow: 0 6px 22px rgba(0,0,0,.16); min-width: 128px;
+  }
+  .tip-h { font-family: var(--mono); color: var(--muted); font-size: 0.74rem; margin-bottom: 5px; }
+  .tip-r { display: flex; align-items: center; gap: 7px; justify-content: space-between; }
+  .tip-r span:last-child { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  /* ----------------------------------------------------------- arena band */
+  .arena-band { background: var(--arena-plane); color: #f3f2f8; border-top: 0; padding: 52px 0 56px; }
+  .arena-band .eyebrow { color: #8b8894; }
+  .arena-band .note, .arena-band .lede { color: #c0bdcb; }
+  .player {
+    display: grid; grid-template-columns: minmax(0,300px) 1fr; gap: 26px;
+    align-items: start; margin-top: 26px;
+  }
+  @media (max-width: 820px) { .player { grid-template-columns: 1fr; } }
+  .arena-shell {
+    background: #100f16; border: 1px solid rgba(255,255,255,.09);
+    border-radius: 12px; padding: 12px;
+  }
+  canvas#arena { display: block; width: 100%; height: auto; border-radius: 7px; }
+
+  .hud { display: flex; flex-direction: column; gap: 14px; }
+  .hud-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .side {
+    display: flex; flex-direction: column; gap: 7px;
+    background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.07);
+    border-radius: 9px; padding: 12px 14px;
+  }
+  .side-name { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 650; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .towers { display: flex; gap: 6px; }
+  .tw { flex: 1; height: 6px; border-radius: 3px; background: rgba(255,255,255,.10); overflow: hidden; }
+  .tw i { display: block; height: 100%; border-radius: 3px; transition: width .12s linear; }
+  .elixir { height: 8px; border-radius: 4px; background: rgba(255,255,255,.10); overflow: hidden; }
+  .elixir i { display: block; height: 100%; background: var(--accent); border-radius: 4px; transition: width .1s linear; }
+  .meta-line { display: flex; gap: 14px; font-family: var(--mono); font-size: 0.78rem; color: #a9a6b4; }
+
+  .controls { display: flex; flex-direction: column; gap: 12px; }
+  .ctl-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  button, select {
+    font-family: var(--sans); font-size: 0.86rem; color: #f3f2f8;
+    background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.14);
+    border-radius: 7px; padding: 7px 13px; cursor: pointer; min-height: 34px;
+  }
+  button:hover, select:hover { background: rgba(255,255,255,.13); }
+  button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  select { background-image: none; }
+  select option { color: #14121c; background: #fff; }
+  input[type=range] { flex: 1; min-width: 140px; accent-color: var(--accent); height: 26px; }
+  .scrub-row { display: flex; align-items: center; gap: 12px; }
+  .clock { font-family: var(--mono); font-size: 0.86rem; color: #c0bdcb; min-width: 92px; text-align: right; }
+
+  .playlog {
+    font-family: var(--mono); font-size: 0.76rem; line-height: 1.75;
+    background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.07);
+    border-radius: 9px; padding: 10px 12px; height: 132px; overflow-y: auto;
+  }
+  .playlog div { display: flex; gap: 9px; }
+  .playlog .pt { color: #8b8894; }
+  .verdict { font-size: 0.88rem; font-weight: 650; }
+
+  /* -------------------------------------------------------------- process */
+  .flow { display: flex; gap: 10px; align-items: stretch; overflow-x: auto; padding-bottom: 6px; }
+  .step {
+    flex: 1 1 0; min-width: 168px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 9px; padding: 14px 15px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .step-n {
+    font-family: var(--mono); font-size: 0.72rem; color: var(--accent);
+    font-weight: 700; letter-spacing: 0.06em;
+  }
+  .step-t { font-size: 0.92rem; font-weight: 650; }
+  .step-d { font-size: 0.81rem; color: var(--ink-2); line-height: 1.5; }
+  .loopback {
+    display: flex; align-items: center; gap: 10px; margin-top: 10px;
+    font-size: 0.82rem; color: var(--muted); font-family: var(--mono);
+  }
+  .loopback .bar { flex: 1; height: 1px; background: var(--baseline); }
+
+  /* --------------------------------------------------------------- tables */
+  .tbl-host { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.87rem; }
+  caption { text-align: left; font-size: 0.83rem; color: var(--muted); padding-bottom: 8px; }
+  th, td { padding: 7px 12px; text-align: right; border-bottom: 1px solid var(--hairline); }
+  th:first-child, td:first-child { text-align: left; }
+  thead th { color: var(--ink-2); font-weight: 650; font-size: 0.8rem; white-space: nowrap; }
+  tbody td { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  tbody td:first-child { font-family: var(--sans); }
+  tbody tr:last-child td { border-bottom: 0; }
+  .win { color: var(--good); font-weight: 650; }
+
+  /* -------------------------------------------------------------- finding */
+  .finding {
+    display: grid; grid-template-columns: 26px 1fr; gap: 14px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px 20px;
+  }
+  .finding-n {
+    font-family: var(--mono); font-size: 0.95rem; font-weight: 700;
+    color: var(--accent);
+  }
+  .kv { display: flex; flex-wrap: wrap; gap: 6px 22px; margin-top: 4px; }
+  .kv div { font-family: var(--mono); font-size: 0.8rem; color: var(--ink-2); }
+  .kv b { color: var(--ink); font-weight: 600; }
+
+  footer { padding: 44px 0 72px; border-top: 1px solid var(--hairline); }
+  pre {
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 16px; overflow-x: auto;
+    font-family: var(--mono); font-size: 0.83rem; line-height: 1.6; margin: 0;
+  }
+  .sr {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+
+<header>
+  <div class="wrap titleblock">
+    <div class="eyebrow">Self-play reinforcement learning</div>
+    <h1>Learning Clash Royale from zero</h1>
+    <p class="lede">
+      An agent that starts with random weights, plays itself two million times, and
+      works its way up a ladder of opponents. Every number and every replay below
+      comes from one <span class="num">201</span>-iteration training run.
+    </p>
+    <div class="caveat">
+      <div>
+        <strong>This learns a simulator, not the real app.</strong> Supercell's API is
+        read-only, automating the real client breaks their terms, and a phone plays
+        about two matches a minute &#x2014; a million matches would take roughly a year. The
+        strategy it discovers is real; the weights do not transfer to a device.
+      </div>
+    </div>
+    <div class="stats" id="stats"></div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">The result</div>
+      <h2>Did it actually learn?</h2>
+      <p class="note">
+        Self-play Elo alone can lie &#x2014; a policy can chase its own tail, beating last
+        week's version while getting worse in absolute terms. So progress is measured
+        against four <em>fixed</em> scripted bots that never change. This is the
+        ungameable number.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Win rate against fixed opponents</div>
+        <div class="card-sub">
+          16 games per bot at each checkpoint, seats alternated. The <code>noop</code>
+          bot is beaten 100% of the time from the very first iteration and is left off
+          the plot.
+        </div>
+      </div>
+      <div class="legend" id="lg-eval"></div>
+      <div class="chart-host" id="ch-eval"></div>
+    </div>
+
+    <div class="grid-2" style="margin-top:20px">
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Every frozen version, rated on one scale</div>
+          <div class="card-sub">
+            Ten historical snapshots kept in the opponent pool, plus the scripted bots.
+            Anchored so <code>random</code> = 0.
+          </div>
+        </div>
+        <div class="chart-host" id="ch-ladder"></div>
+        <p class="note" style="margin-top:12px; font-size:0.86rem">
+          Monotonic across all ten snapshots: every frozen version is stronger than the
+          one before it. That is the difference between steady improvement and cycling.
+        </p>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">League Elo over training</div>
+          <div class="card-sub">Relative measure &#x2014; what self-play optimises directly.</div>
+        </div>
+        <div class="chart-host" id="ch-elo"></div>
+        <p class="note" style="margin-top:12px; font-size:0.86rem">
+          Noisy by construction: each iteration mixes games against bots it crushes and
+          bots that crush it. The trend is what matters.
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<section class="arena-band">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">The process</div>
+      <h2 style="color:#f3f2f8">Watch it play</h2>
+      <p class="note">
+        Real recorded matches from the trained checkpoint &#x2014; not an animation of an
+        idea. The agent is always drawn at the bottom in blue, whichever seat it
+        actually occupied. Every dot is a live unit; the bar under each side is elixir.
+      </p>
+    </div>
+
+    <div class="ctl-row">
+      <label class="sr" for="sel-replay">Match</label>
+      <select id="sel-replay"></select>
+      <span class="verdict" id="verdict"></span>
+    </div>
+
+    <div class="player">
+      <div class="arena-shell">
+        <canvas id="arena" width="360" height="640" role="img"
+                aria-label="Clash Royale arena replay"></canvas>
+      </div>
+
+      <div class="hud">
+        <div class="side" id="side-opp">
+          <div class="side-name"><span class="dot" style="background:var(--p1)"></span>
+            <span id="opp-name">opponent</span></div>
+          <div class="towers" id="opp-towers"></div>
+          <div class="elixir"><i id="opp-elixir"></i></div>
+        </div>
+        <div class="side" id="side-agent">
+          <div class="side-name"><span class="dot" style="background:var(--p0)"></span>
+            <span id="agent-name">agent</span></div>
+          <div class="towers" id="agent-towers"></div>
+          <div class="elixir"><i id="agent-elixir"></i></div>
+        </div>
+
+        <div class="meta-line">
+          <span id="m-phase">1x elixir</span>
+          <span id="m-crowns">crowns 0 &#x2013; 0</span>
+        </div>
+
+        <div class="controls">
+          <div class="scrub-row">
+            <button id="btn-play" aria-pressed="false">Play</button>
+            <input type="range" id="scrub" min="0" max="100" value="0"
+                   aria-label="Scrub through the match" />
+            <span class="clock" id="clock">0.0s</span>
+          </div>
+          <div class="ctl-row">
+            <span class="eyebrow" style="letter-spacing:.1em">Speed</span>
+            <button class="spd" data-s="1">1x</button>
+            <button class="spd" data-s="2" aria-pressed="true">2x</button>
+            <button class="spd" data-s="4">4x</button>
+            <button class="spd" data-s="8">8x</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="eyebrow" style="letter-spacing:.1em; margin-bottom:6px">Cards played</div>
+          <div class="playlog" id="playlog"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">How it learns</div>
+      <h2>The loop that makes it improve</h2>
+      <p class="note">
+        This is a genuine cycle, so the steps are numbered: each iteration feeds the
+        next one's opponents. Playing only against the newest copy of yourself is
+        unstable &#x2014; policies drift and forget how to beat older styles &#x2014; so the pool
+        keeps history.
+      </p>
+    </div>
+    <div class="flow">
+      <div class="step">
+        <div class="step-n">01</div>
+        <div class="step-t">Collect</div>
+        <div class="step-d">64 battles run in parallel. The agent takes one seat; a
+          league opponent takes the other. Only the agent's transitions are kept.</div>
+      </div>
+      <div class="step">
+        <div class="step-n">02</div>
+        <div class="step-t">Credit the damage</div>
+        <div class="step-d">Potential-based shaping on tower-health difference gives
+          per-tick credit for the trade; the win or loss lands as a terminal reward.</div>
+      </div>
+      <div class="step">
+        <div class="step-n">03</div>
+        <div class="step-t">Update</div>
+        <div class="step-d">PPO on a masked action head &#x2014; 577 actions: hold, or one of
+          4 hand slots onto a 16&#x00D7;9 placement grid. Illegal plays are masked, not
+          punished.</div>
+      </div>
+      <div class="step">
+        <div class="step-n">04</div>
+        <div class="step-t">Freeze a rival</div>
+        <div class="step-d">Every 20 iterations the current policy is frozen into the
+          opponent pool, and gets an Elo rating of its own.</div>
+      </div>
+      <div class="step">
+        <div class="step-n">05</div>
+        <div class="step-t">Pick hard opponents</div>
+        <div class="step-d">Sampling weight <code>(1&#x2212;p)&#x00B2;</code> puts the mass on
+          opponents currently <em>beating</em> the agent, because that is where the
+          gradient is.</div>
+      </div>
+    </div>
+    <div class="loopback">
+      <span>05 feeds 01</span><span class="bar"></span><span>next iteration</span>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">Debugging</div>
+      <h2>Two things that looked like other things</h2>
+      <p class="note">
+        Both cost real time, and both impersonated a different bug. They are the reason
+        the run above works at all.
+      </p>
+    </div>
+    <div class="stack" style="gap:16px">
+      <div class="finding">
+        <div class="finding-n">01</div>
+        <div>
+          <h3>A collapsed policy that hadn't collapsed</h3>
+          <p class="note" style="margin-top:6px">
+            Entropy read <span class="num">0.28</span> against a uniform
+            <span class="num">4.5</span>, and KL sat at <span class="num">0.00</span>.
+            Textbook collapse. But those two readings contradict each other &#x2014; a policy
+            that just collapsed would show <em>large</em> KL while it moved. The real
+            cause: for most ticks no card is affordable, so <strong>holding is the only
+            legal action</strong>. Three quarters of the batch was states with nothing
+            to decide, contributing zero gradient and dragging the average down.
+          </p>
+          <p class="note" style="margin-top:8px">
+            Confirming entropy at initialisation was correctly
+            <span class="num">5.855</span> ruled out the network in one step &#x2014; and
+            killed a plausible wrong theory about activation scale. The fix stores
+            transitions only where a real choice exists, making it a semi-MDP: a span
+            of <span class="num">k</span> ticks carries <code>&#x03A3;&#x03B3;&#x02B2;r&#x2C7C;</code> and
+            bootstraps with <code>&#x03B3;&#x1D4F;</code>.
+          </p>
+          <div class="kv">
+            <div>entropy <b>0.28 &#x2192; 4.43</b></div>
+            <div>legal actions per stored state <b>~1 &#x2192; ~93</b></div>
+            <div>useful batch <b>25% &#x2192; 100%</b></div>
+          </div>
+        </div>
+      </div>
+      <div class="finding">
+        <div class="finding-n">02</div>
+        <div>
+          <h3>Advantage normalisation dividing by nothing</h3>
+          <p class="note" style="margin-top:6px">
+            Early on, the only reward is small potential shaping, so a minibatch's
+            advantages are nearly constant &#x2014; <code>std &#x2248; 0</code>. Normalising by it
+            turned pure noise into enormous pseudo-advantages. Now normalisation runs
+            over the whole batch with a clamped divisor, which caps the amplification
+            instead of letting <code>1/std</code> explode.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">Internals</div>
+      <h2>What the optimiser was doing</h2>
+      <p class="note">
+        Separate panels, one scale each &#x2014; never two y-axes on one plot. Together these
+        say the policy sharpened gradually rather than snapping shut, and the critic
+        learned to predict the outcome.
+      </p>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Policy entropy</div>
+          <div class="card-sub">Falls smoothly from near-uniform. A cliff here would mean collapse.</div>
+        </div>
+        <div class="chart-host" id="ch-ent"></div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Critic explained variance</div>
+          <div class="card-sub">How much of the return the value head predicts. 0 = no better than the mean.</div>
+        </div>
+        <div class="chart-host" id="ch-ev"></div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Cards played per match</div>
+          <div class="card-sub">It learned to spend elixir instead of hoarding it.</div>
+        </div>
+        <div class="chart-host" id="ch-plays"></div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Legal actions at a decision point</div>
+          <div class="card-sub">The denominator that made entropy look broken. Flat by design.</div>
+        </div>
+        <div class="chart-host" id="ch-legal"></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">Table view</div>
+      <h2>The same numbers, readable</h2>
+      <p class="note">Every value plotted above, without relying on colour.</p>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="tbl-host" id="tbl-eval"></div>
+      </div>
+      <div class="card">
+        <div class="tbl-host" id="tbl-ladder"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <div class="wrap stack" style="gap:16px">
+    <h3>Reproduce it</h3>
+    <pre id="repro"></pre>
+    <p class="note">
+      The run above stopped at 201 of 400 iterations &#x2014; throughput had collapsed under
+      machine contention, and <code>heuristic</code> is not yet beaten. The agent is
+      mid-curve, not converged. <code>--resume</code> picks it back up with the league
+      intact.
+    </p>
+  </div>
+</footer>
+
+<div class="tip" id="tip" role="status" aria-live="polite"></div>
+
+<script type="application/json" id="payload">__DATA__</script>
+<script>
+(() => {
+  "use strict";
+  const D = JSON.parse(document.getElementById("payload").textContent);
+  const CARDS = D.cards, AR = D.arena;
+  const fmtInt = n => n.toLocaleString("en-US");
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+  /* ------------------------------------------------------------ stat strip */
+  const M = D.meta;
+  const finalEval = D.evals[D.evals.length - 1];
+  const stats = [
+    ["iterations", fmtInt(M.iters)],
+    ["decisions taken", (M.decisions / 1e6).toFixed(2) + "M"],
+    ["game ticks simulated", (M.ticks / 1e6).toFixed(1) + "M"],
+    ["hours of play simulated", Math.round(M.ticks * M.dt / 3600).toLocaleString()],
+    ["network parameters", fmtInt(M.params)],
+    ["beats rush bot", Math.round(finalEval.rush * 100) + "%"],
+  ];
+  document.getElementById("stats").innerHTML = stats.map(([k, v]) =>
+    `<div class="stat"><div class="stat-v">${v}</div><div class="stat-k">${k}</div></div>`
+  ).join("");
+
+  document.getElementById("repro").textContent =
+    "PYTHONPATH=. .venv/bin/python train.py --iters 400 --n-envs 64 \\\n" +
+    "    --horizon 128 --workers 8 --device mps \\\n" +
+    "    --snapshot-every 20 --eval-every 20 --eval-games 16\n\n" +
+    "PYTHONPATH=. .venv/bin/python watch.py \\\n" +
+    "    --a runs/" + M.run + "/latest.pt --b heuristic";
+
+  /* ---------------------------------------------------------- svg plumbing */
+  const NS = "http://www.w3.org/2000/svg";
+  const el = (t, a = {}) => {
+    const n = document.createElementNS(NS, t);
+    for (const k in a) n.setAttribute(k, a[k]);
+    return n;
+  };
+  const tip = document.getElementById("tip");
+  const showTip = (x, y, html) => {
+    tip.innerHTML = html;
+    tip.style.opacity = "1";
+    const r = tip.getBoundingClientRect();
+    let left = x + 14, top = y - r.height / 2;
+    if (left + r.width > innerWidth - 8) left = x - r.width - 14;
+    tip.style.left = Math.max(8, left) + "px";
+    tip.style.top = Math.min(Math.max(8, top), innerHeight - r.height - 8) + "px";
+  };
+  const hideTip = () => { tip.style.opacity = "0"; };
+
+  function niceTicks(lo, hi, n = 5) {
+    const span = hi - lo || 1;
+    const raw = span / n;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= raw) || 10 * mag;
+    const out = [];
+    for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(10));
+    return out;
+  }
+
+  /* ---------------------------------------------------------- line chart */
+  function lineChart(host, opts) {
+    const {series, yDomain, yFmt = v => v, xFmt = v => v, xTitle, yTitle,
+           markers = false, height = 260, directLabels = true} = opts;
+    host.innerHTML = "";
+    const W = Math.max(host.clientWidth || 520, 300);
+    const m = {t: 14, r: directLabels ? 74 : 16, b: 34, l: 46};
+    const svg = el("svg", {class: "chart", viewBox: `0 0 ${W} ${height}`,
+                           width: W, height, role: "img"});
+    const pw = W - m.l - m.r, ph = height - m.t - m.b;
+    const xs = series[0].points.map(p => p.x);
+    const x0 = Math.min(...xs), x1 = Math.max(...xs);
+    let [ylo, yhi] = yDomain || (() => {
+      const all = series.flatMap(s => s.points.map(p => p.y)).filter(v => v != null);
+      const lo = Math.min(...all), hi = Math.max(...all);
+      const pad = (hi - lo || 1) * 0.12;
+      return [lo - pad, hi + pad];
+    })();
+    const X = v => m.l + (x1 === x0 ? pw / 2 : (v - x0) / (x1 - x0) * pw);
+    const Y = v => m.t + ph - (v - ylo) / (yhi - ylo) * ph;
+
+    for (const t of niceTicks(ylo, yhi, 5)) {
+      if (t < ylo - 1e-9 || t > yhi + 1e-9) continue;
+      svg.appendChild(el("line", {class: "grid-line", x1: m.l, x2: m.l + pw,
+                                  y1: Y(t), y2: Y(t)}));
+      const tx = el("text", {x: m.l - 8, y: Y(t) + 3.5, "text-anchor": "end"});
+      tx.textContent = yFmt(t);
+      svg.appendChild(tx);
+    }
+    svg.appendChild(el("line", {class: "base-line", x1: m.l, x2: m.l + pw,
+                                y1: m.t + ph, y2: m.t + ph}));
+    const xt = niceTicks(x0, x1, Math.min(6, xs.length));
+    for (const t of xt) {
+      if (t < x0 - 1e-9 || t > x1 + 1e-9) continue;
+      const tx = el("text", {x: X(t), y: height - 14, "text-anchor": "middle"});
+      tx.textContent = xFmt(t);
+      svg.appendChild(tx);
+    }
+    if (xTitle) {
+      const t = el("text", {class: "axis-title", x: m.l + pw / 2, y: height - 1,
+                            "text-anchor": "middle"});
+      t.textContent = xTitle;
+      svg.appendChild(t);
+    }
+    if (yTitle) {
+      const t = el("text", {class: "axis-title", x: 4, y: 10});
+      t.textContent = yTitle;
+      svg.appendChild(t);
+    }
+
+    for (const s of series) {
+      const pts = s.points.filter(p => p.y != null);
+      if (!pts.length) continue;
+      svg.appendChild(el("path", {
+        d: pts.map((p, i) => `${i ? "L" : "M"}${X(p.x).toFixed(1)} ${Y(p.y).toFixed(1)}`).join(""),
+        fill: "none", stroke: s.color, "stroke-width": 2,
+        "stroke-linejoin": "round", "stroke-linecap": "round",
+      }));
+      if (markers) for (const p of pts) {
+        svg.appendChild(el("circle", {cx: X(p.x), cy: Y(p.y), r: 4.4, fill: s.color,
+                                      stroke: css("--surface"), "stroke-width": 2}));
+      }
+      if (directLabels) {
+        const last = pts[pts.length - 1];
+        const t = el("text", {class: "dlabel", x: X(last.x) + 10, y: Y(last.y) + 4,
+                              fill: s.color});
+        t.textContent = s.name;
+        svg.appendChild(t);
+      }
+    }
+
+    // Crosshair + tooltip layer. Hit area is the whole plot, not the marks.
+    const rule = el("line", {class: "crosshair", y1: m.t, y2: m.t + ph, opacity: 0});
+    svg.appendChild(rule);
+    const focus = series.map(s => {
+      const c = el("circle", {r: 5.5, fill: s.color, stroke: css("--surface"),
+                              "stroke-width": 2, opacity: 0});
+      svg.appendChild(c);
+      return c;
+    });
+    const hit = el("rect", {x: m.l, y: m.t, width: pw, height: ph, fill: "transparent"});
+    svg.appendChild(hit);
+    const move = ev => {
+      const r = svg.getBoundingClientRect();
+      const vx = (ev.clientX - r.left) / r.width * W;
+      let bi = 0, bd = Infinity;
+      xs.forEach((xv, i) => { const d = Math.abs(X(xv) - vx); if (d < bd) { bd = d; bi = i; } });
+      const xv = xs[bi];
+      rule.setAttribute("x1", X(xv)); rule.setAttribute("x2", X(xv));
+      rule.setAttribute("opacity", 1);
+      let rows = "";
+      series.forEach((s, k) => {
+        const p = s.points[bi];
+        if (!p || p.y == null) { focus[k].setAttribute("opacity", 0); return; }
+        focus[k].setAttribute("cx", X(p.x));
+        focus[k].setAttribute("cy", Y(p.y));
+        focus[k].setAttribute("opacity", 1);
+        rows += `<div class="tip-r"><span><span class="sw" style="display:inline-block;background:${s.color}"></span> ${s.name}</span><span>${yFmt(p.y)}</span></div>`;
+      });
+      showTip(ev.clientX, ev.clientY,
+        `<div class="tip-h">${xTitle || "iteration"} ${xFmt(xv)}</div>${rows}`);
+    };
+    const leave = () => {
+      rule.setAttribute("opacity", 0);
+      focus.forEach(c => c.setAttribute("opacity", 0));
+      hideTip();
+    };
+    svg.addEventListener("pointermove", move);
+    svg.addEventListener("pointerleave", leave);
+    host.appendChild(svg);
+  }
+
+  /* ------------------------------------------------------------- the ladder */
+  function ladderChart(host) {
+    host.innerHTML = "";
+    const snaps = D.ladder.entries.filter(e => e.kind === "snapshot")
+                          .sort((a, b) => a.iteration - b.iteration);
+    const bots = D.ladder.entries.filter(e => e.kind === "bot");
+    const rowH = 26, m = {t: 26, r: 54, b: 30, l: 62};
+    const W = Math.max(host.clientWidth || 480, 300);
+    const H = m.t + m.b + snaps.length * rowH;
+    const svg = el("svg", {class: "chart", viewBox: `0 0 ${W} ${H}`, width: W,
+                           height: H, role: "img"});
+    const pw = W - m.l - m.r;
+    const all = D.ladder.entries.map(e => e.elo).concat([0]);
+    const lo = Math.min(...all) - 60, hi = Math.max(...all) + 60;
+    const X = v => m.l + (v - lo) / (hi - lo) * pw;
+
+    for (const b of bots) {
+      const x = X(b.elo);
+      svg.appendChild(el("line", {class: "ref-line", x1: x, x2: x, y1: m.t - 8,
+                                  y2: m.t + snaps.length * rowH}));
+      const t = el("text", {x: x, y: m.t - 13, "text-anchor": "middle"});
+      t.textContent = b.label;
+      svg.appendChild(t);
+    }
+    snaps.forEach((s, i) => {
+      const y = m.t + i * rowH, h = rowH - 9;
+      const xz = X(0), xv = X(s.elo);
+      const left = Math.min(xz, xv), w = Math.max(2, Math.abs(xv - xz));
+      // 4px rounded data-end, square against the zero baseline.
+      const r = el("rect", {x: left, y: y + 2, width: w, height: h,
+                            rx: 4, fill: css("--s1")});
+      svg.appendChild(r);
+      const lb = el("text", {x: m.l - 10, y: y + h / 2 + 5.5, "text-anchor": "end"});
+      lb.textContent = "@" + s.iteration;
+      svg.appendChild(lb);
+      const vl = el("text", {x: xv + (s.elo >= 0 ? 8 : -8), y: y + h / 2 + 5.5,
+                             "text-anchor": s.elo >= 0 ? "start" : "end",
+                             fill: css("--ink-2")});
+      vl.textContent = Math.round(s.elo);
+      svg.appendChild(vl);
+      const hit = el("rect", {x: m.l, y: y, width: pw, height: rowH, fill: "transparent"});
+      hit.addEventListener("pointermove", ev => showTip(ev.clientX, ev.clientY,
+        `<div class="tip-h">snapshot @ iteration ${s.iteration}</div>` +
+        `<div class="tip-r"><span>Elo</span><span>${s.elo}</span></div>` +
+        `<div class="tip-r"><span>games</span><span>${fmtInt(s.games)}</span></div>` +
+        (s.winrate_vs_learner != null
+          ? `<div class="tip-r"><span>beats learner</span><span>${(s.winrate_vs_learner * 100).toFixed(0)}%</span></div>` : "")));
+      hit.addEventListener("pointerleave", hideTip);
+      svg.appendChild(hit);
+    });
+    svg.appendChild(el("line", {class: "base-line", x1: X(0), x2: X(0), y1: m.t,
+                                y2: m.t + snaps.length * rowH}));
+    const ax = el("text", {class: "axis-title", x: X(0), y: H - 8,
+                           "text-anchor": "middle"});
+    ax.textContent = "Elo (random bot = 0)";
+    svg.appendChild(ax);
+    host.appendChild(svg);
+  }
+
+  /* ------------------------------------------------------------ build charts */
+  const EVAL_SERIES = [
+    {key: "random", name: "random", color: () => css("--s1")},
+    {key: "rush", name: "rush", color: () => css("--s2")},
+    {key: "heuristic", name: "heuristic", color: () => css("--s3")},
+  ];
+  document.getElementById("lg-eval").innerHTML = EVAL_SERIES.map(s =>
+    `<span class="lg"><span class="sw" style="background:${s.color()}"></span>vs ${s.name}</span>`
+  ).join("") + `<span class="lg"><span class="sw" style="background:var(--muted)"></span>vs noop \u2014 1.00 throughout</span>`;
+
+  const curves = D.curves;
+  const pts = (yk) => curves.iter.map((it, i) => ({x: it, y: curves[yk][i]}))
+                             .filter(p => p.y != null);
+
+  function drawAll() {
+    lineChart(document.getElementById("ch-eval"), {
+      series: EVAL_SERIES.map(s => ({
+        name: s.name, color: s.color(),
+        points: D.evals.map(e => ({x: e.iter, y: e[s.key]})),
+      })),
+      yDomain: [0, 1.04], yFmt: v => v.toFixed(2), xFmt: v => String(Math.round(v)),
+      xTitle: "iteration", yTitle: "win rate", markers: true, height: 300,
+    });
+    ladderChart(document.getElementById("ch-ladder"));
+    const single = (id, key, fmt, title, dom) => lineChart(document.getElementById(id), {
+      series: [{name: "", color: css("--s1"), points: pts(key)}],
+      yFmt: fmt, xFmt: v => String(Math.round(v)), xTitle: "iteration",
+      yTitle: title, height: 200, directLabels: false, yDomain: dom,
+    });
+    single("ch-elo", "learner_elo", v => String(Math.round(v)), "Elo");
+    single("ch-ent", "entropy", v => v.toFixed(1), "entropy (nats)", [0, 5]);
+    single("ch-ev", "explained_var", v => v.toFixed(1), "explained var", [-0.4, 1]);
+    single("ch-plays", "plays", v => String(Math.round(v)), "cards / match");
+    single("ch-legal", "legal_actions", v => String(Math.round(v)), "legal actions", [0, 120]);
+  }
+  drawAll();
+
+  /* ------------------------------------------------------------ table views */
+  const bots = ["noop", "random", "rush", "heuristic"];
+  document.getElementById("tbl-eval").innerHTML =
+    `<table><caption>Win rate against each scripted bot, by checkpoint</caption>
+     <thead><tr><th>iteration</th>${bots.map(b => `<th>${b}</th>`).join("")}</tr></thead>
+     <tbody>${D.evals.map(e => `<tr><td>${e.iter}</td>` +
+        bots.map(b => `<td${e[b] >= 0.5 ? ' class="win"' : ""}>${e[b].toFixed(2)}</td>`).join("") +
+        `</tr>`).join("")}</tbody></table>`;
+
+  document.getElementById("tbl-ladder").innerHTML =
+    `<table><caption>Closing league standings \u2014 learner Elo ${D.ladder.learner_elo}</caption>
+     <thead><tr><th>entry</th><th>kind</th><th>Elo</th><th>games</th><th>beats learner</th></tr></thead>
+     <tbody>${D.ladder.entries.map(e => `<tr><td>${e.label}</td><td>${e.kind}${e.anchored ? " (anchor)" : ""}</td>` +
+        `<td>${e.elo}</td><td>${fmtInt(e.games)}</td>` +
+        `<td>${e.winrate_vs_learner == null ? "\u2014" : (e.winrate_vs_learner * 100).toFixed(0) + "%"}</td></tr>`).join("")}
+     </tbody></table>`;
+
+  /* ------------------------------------------------------------- the replay */
+  const sel = document.getElementById("sel-replay");
+  D.replays.forEach((r, i) => {
+    const verdict = r.score_for_a === 1 ? "win" : r.score_for_a === 0 ? "loss" : "draw";
+    sel.add(new Option(`vs ${r.b} \u2014 ${verdict} (${r.duration}s)`, String(i)));
+  });
+
+  const cv = document.getElementById("arena");
+  const ctx = cv.getContext("2d");
+  let R = D.replays[0], fi = 0, playing = false, speed = 2, acc = 0, lastTs = 0;
+  const scrub = document.getElementById("scrub");
+  const btnPlay = document.getElementById("btn-play");
+
+  // Board is drawn from the agent's point of view: whichever seat it held, it
+  // sits at the bottom in blue. Without this the four replays read inconsistently.
+  const flip = () => R.a_seat === 1;
+  const bx = x => flip() ? AR.w - x : x;
+  const by = y => flip() ? AR.h - y : y;
+
+  function resize() {
+    const cssW = cv.clientWidth || 300;
+    const cssH = cssW * AR.h / AR.w;
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    cv.width = Math.round(cssW * dpr);
+    cv.height = Math.round(cssH * dpr);
+    cv.style.height = cssH + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    draw();
+  }
+
+  function drawArena(tile, h) {
+    ctx.fillStyle = "#191822";
+    ctx.fillRect(0, 0, AR.w * tile, h);
+    // Faint half tint so "my side" reads instantly.
+    ctx.fillStyle = "rgba(42,120,214,0.055)";
+    ctx.fillRect(0, h / 2, AR.w * tile, h / 2);
+    ctx.fillStyle = "rgba(227,73,72,0.055)";
+    ctx.fillRect(0, 0, AR.w * tile, h / 2);
+    // Lane guides.
+    ctx.strokeStyle = "rgba(255,255,255,0.045)";
+    ctx.lineWidth = 1;
+    for (const gx of AR.bridge_x) {
+      ctx.beginPath();
+      ctx.moveTo(gx * tile, 0); ctx.lineTo(gx * tile, h);
+      ctx.stroke();
+    }
+    // River, then bridges over it.
+    const ry = h - AR.river_y * tile;
+    const rh = Math.max(3, tile * 1.0);
+    ctx.fillStyle = "rgba(58,150,220,0.30)";
+    ctx.fillRect(0, ry - rh / 2, AR.w * tile, rh);
+    ctx.fillStyle = "rgba(237,161,0,0.55)";
+    for (const gx of AR.bridge_x) {
+      const bw = AR.bridge_half_w * 2 * tile;
+      ctx.fillRect((gx - AR.bridge_half_w) * tile, ry - rh / 2, bw, rh);
+    }
+  }
+
+  function drawTower(tile, h, tx, ty, frac, colour, isKing) {
+    const cx = bx(tx) * tile, cy = h - by(ty) * tile;
+    const s = (isKing ? 1.9 : 1.45) * tile;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.fillStyle = frac > 0 ? "rgba(255,255,255,0.09)" : "rgba(255,255,255,0.03)";
+    ctx.fillRect(-s / 2, -s / 2, s, s);
+    ctx.strokeStyle = frac > 0 ? colour : "rgba(255,255,255,0.14)";
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(-s / 2, -s / 2, s, s);
+    if (frac > 0) {
+      ctx.fillStyle = colour;
+      const bh = (s - 4) * frac;
+      ctx.globalAlpha = 0.85;
+      ctx.fillRect(-s / 2 + 2, s / 2 - 2 - bh, s - 4, bh);
+      ctx.globalAlpha = 1;
+    } else {
+      ctx.strokeStyle = "rgba(255,255,255,0.20)";
+      ctx.beginPath();
+      ctx.moveTo(-s / 4, -s / 4); ctx.lineTo(s / 4, s / 4);
+      ctx.moveTo(s / 4, -s / 4); ctx.lineTo(-s / 4, s / 4);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function draw() {
+    const tile = (cv.clientWidth || 300) / AR.w;
+    const h = AR.h * tile;
+    drawArena(tile, h);
+    const f = R.frames[Math.min(fi, R.frames.length - 1)];
+    if (!f) return;
+
+    const agentCol = css("--p0") || "#2a78d6";
+    const oppCol = css("--p1") || "#e34948";
+    for (const seat of [0, 1]) {
+      const isAgent = seat === R.a_seat;
+      const col = isAgent ? agentCol : oppCol;
+      const th = f.th[seat];
+      const P = AR.princess_y, KY = AR.king[1];
+      const mir = v => seat === 0 ? v : AR.h - v;
+      drawTower(tile, h, AR.king[0], mir(KY), th[0] / 100, col, true);
+      drawTower(tile, h, AR.princess_x[0], mir(P), th[1] / 100, col, false);
+      drawTower(tile, h, AR.princess_x[1], mir(P), th[2] / 100, col, false);
+    }
+
+    // Recent plays pulse briefly at their placement tile.
+    for (const p of R.plays) {
+      const pf = Math.round(p.tick / R.stride);
+      const age = fi - pf;
+      if (age < 0 || age > 6) continue;
+      const a = 1 - age / 6;
+      ctx.strokeStyle = p.seat === R.a_seat ? agentCol : oppCol;
+      ctx.globalAlpha = a * 0.8;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(bx(p.x) * tile, h - by(p.y) * tile, tile * (0.8 + 1.8 * (1 - a)), 0, 7);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    const u = f.u;
+    for (let i = 0; i < u.length; i += 5) {
+      const ux = u[i] / 10, uy = u[i + 1] / 10, owner = u[i + 2];
+      const card = CARDS[u[i + 3]] || {cost: 3, air: false};
+      const hp = u[i + 4] / 100;
+      const isAgent = owner === R.a_seat;
+      const col = isAgent ? agentCol : oppCol;
+      const cx = bx(ux) * tile, cy = h - by(uy) * tile;
+      const r = Math.max(2.4, tile * (0.26 + 0.045 * card.cost));
+      if (card.air) {                       // flying: soft halo + hollow body
+        ctx.fillStyle = col;
+        ctx.globalAlpha = 0.18;
+        ctx.beginPath(); ctx.arc(cx, cy + r * 0.5, r * 1.25, 0, 7); ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, 7);
+      ctx.fillStyle = col;
+      ctx.globalAlpha = card.air ? 0.55 : 0.28 + 0.72 * hp;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.lineWidth = card.buildings_only ? 2.2 : 1.2;
+      ctx.strokeStyle = col;
+      ctx.stroke();
+      if (hp < 0.999) {                     // thin health arc, only when damaged
+        ctx.beginPath();
+        ctx.arc(cx, cy, r + 2.2, -Math.PI / 2, -Math.PI / 2 + hp * Math.PI * 2);
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+      }
+    }
+  }
+
+  const twHTML = () => "<div class=\"tw\"><i></i></div>".repeat(3);
+  document.getElementById("agent-towers").innerHTML = twHTML();
+  document.getElementById("opp-towers").innerHTML = twHTML();
+
+  function syncHUD() {
+    const f = R.frames[Math.min(fi, R.frames.length - 1)];
+    if (!f) return;
+    const a = R.a_seat, o = 1 - a;
+    const setSide = (pfx, seat, colour) => {
+      const bars = document.querySelectorAll(`#${pfx}-towers .tw i`);
+      // Order shown left\u2192right: left princess, king, right princess.
+      const order = [1, 0, 2];
+      order.forEach((k, idx) => {
+        const v = f.th[seat][k];
+        bars[idx].style.width = v + "%";
+        bars[idx].style.background = colour;
+      });
+      document.getElementById(pfx + "-elixir").style.width =
+        (f.e[seat] / 10 * 100) + "%";
+    };
+    setSide("agent", a, css("--p0"));
+    setSide("opp", o, css("--p1"));
+    document.getElementById("clock").textContent = f.t.toFixed(1) + "s";
+    document.getElementById("m-crowns").textContent =
+      `crowns ${f.c[a]} \u2013 ${f.c[o]}`;
+    document.getElementById("m-phase").textContent =
+      f.t >= AR.t_regular ? "overtime \u00b7 3x elixir"
+      : f.t >= AR.t_single ? "2x elixir" : "1x elixir";
+    scrub.value = String(fi);
+
+    const log = [];
+    for (const p of R.plays) {
+      const pf = Math.round(p.tick / R.stride);
+      if (pf > fi) break;
+      log.push(p);
+    }
+    document.getElementById("playlog").innerHTML = log.slice(-40).reverse().map(p => {
+      const who = p.seat === R.a_seat ? "agent" : "opp";
+      const col = p.seat === R.a_seat ? "var(--p0)" : "var(--p1)";
+      const t = (p.tick * D.meta.dt * R.frame_skip).toFixed(1);
+      return `<div><span class="pt">${t}s</span>` +
+             `<span style="color:${col}">${who}</span>` +
+             `<span>${CARDS[p.card].name}</span></div>`;
+    }).join("") || `<div class="pt">no cards played yet</div>`;
+  }
+
+  function loadReplay(i) {
+    R = D.replays[i];
+    fi = 0;
+    scrub.max = String(R.frames.length - 1);
+    document.getElementById("agent-name").textContent = R.a + " (agent)";
+    document.getElementById("opp-name").textContent = R.b + " bot";
+    const v = R.score_for_a === 1 ? "Agent wins" : R.score_for_a === 0 ? "Agent loses" : "Draw";
+    document.getElementById("verdict").innerHTML =
+      `<span style="color:${R.score_for_a === 1 ? "var(--good)" : "var(--p1)"}">${v}</span>` +
+      `<span style="color:#8b8894; font-weight:400"> \u00b7 crowns ${R.crowns[R.a_seat]}\u2013${R.crowns[1 - R.a_seat]}` +
+      (R.overtime ? " \u00b7 went to overtime" : "") + `</span>`;
+    resize();
+    syncHUD();
+  }
+
+  sel.addEventListener("change", () => loadReplay(+sel.value));
+  scrub.addEventListener("input", () => { fi = +scrub.value; draw(); syncHUD(); });
+  btnPlay.addEventListener("click", () => setPlaying(!playing));
+  function setPlaying(p) {
+    playing = p;
+    btnPlay.textContent = p ? "Pause" : "Play";
+    btnPlay.setAttribute("aria-pressed", String(p));
+    if (p) { lastTs = 0; requestAnimationFrame(tick); }
+  }
+  for (const b of document.querySelectorAll(".spd")) {
+    b.addEventListener("click", () => {
+      speed = +b.dataset.s;
+      document.querySelectorAll(".spd").forEach(o =>
+        o.setAttribute("aria-pressed", String(o === b)));
+    });
+  }
+
+  function tick(ts) {
+    if (!playing) return;
+    if (!lastTs) lastTs = ts;
+    const dt = Math.min((ts - lastTs) / 1000, 0.25);
+    lastTs = ts;
+    // One recorded frame = stride ticks of game time.
+    acc += dt * speed / (D.meta.dt * R.stride * R.frame_skip);
+    while (acc >= 1) {
+      acc -= 1;
+      fi++;
+      if (fi >= R.frames.length - 1) { fi = R.frames.length - 1; setPlaying(false); break; }
+    }
+    draw(); syncHUD();
+    if (playing) requestAnimationFrame(tick);
+  }
+
+  let rt;
+  addEventListener("resize", () => {
+    clearTimeout(rt);
+    rt = setTimeout(() => { resize(); drawAll(); }, 140);
+  });
+  const mq = matchMedia("(prefers-color-scheme: dark)");
+  mq.addEventListener("change", () => setTimeout(() => { drawAll(); draw(); syncHUD(); }, 60));
+  new MutationObserver(() => setTimeout(() => { drawAll(); draw(); syncHUD(); }, 60))
+    .observe(document.documentElement, {attributes: true, attributeFilter: ["data-theme"]});
+
+  loadReplay(0);
+  if (!matchMedia("(prefers-reduced-motion: reduce)").matches) setPlaying(true);
+})();
+</script>
